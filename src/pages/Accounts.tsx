@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { UserPlus, Search } from 'lucide-react';
 import AccountCard from '../components/AccountCard';
-import { trackedAccounts as initialAccounts } from '../data/mockData';
+import { getAccounts, saveAccounts } from '../utils/storage';
 import type { TrackedAccount } from '../types';
 
 export default function Accounts() {
-  const [accounts, setAccounts] = useState<TrackedAccount[]>(initialAccounts);
+  const [accounts, setAccounts] = useState<TrackedAccount[]>(getAccounts);
   const [search, setSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newUsername, setNewUsername] = useState('');
@@ -16,24 +16,31 @@ export default function Accounts() {
       a.displayName.toLowerCase().includes(search.toLowerCase())
   );
 
+  const persist = (next: TrackedAccount[]) => {
+    setAccounts(next);
+    saveAccounts(next);
+  };
+
   const handleRemove = (id: string) => {
-    setAccounts((prev) => prev.filter((a) => a.id !== id));
+    persist(accounts.filter((a) => a.id !== id));
   };
 
   const handleAdd = () => {
     if (!newUsername.trim()) return;
+    const username = newUsername.replace(/^@/, '').trim();
+    if (accounts.some((a) => a.username.toLowerCase() === username.toLowerCase())) {
+      setNewUsername('');
+      setShowAddModal(false);
+      return;
+    }
     const newAccount: TrackedAccount = {
       id: Date.now().toString(),
-      username: newUsername.replace('@', ''),
-      displayName: newUsername.replace('@', ''),
-      avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${newUsername}&backgroundColor=1d9bf0`,
-      followers: 0,
-      following: 0,
-      postsCount: 0,
-      verified: false,
+      username,
+      displayName: username,
+      profileImageUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${username}&backgroundColor=1d9bf0`,
       addedAt: new Date().toISOString().split('T')[0],
     };
-    setAccounts((prev) => [...prev, newAccount]);
+    persist([...accounts, newAccount]);
     setNewUsername('');
     setShowAddModal(false);
   };
@@ -44,7 +51,7 @@ export default function Accounts() {
         <div>
           <h1 className="text-2xl font-bold text-white">Tracked Accounts</h1>
           <p className="text-gray-500 mt-1">
-            {accounts.length} accounts being tracked
+            {accounts.length} account{accounts.length !== 1 ? 's' : ''} being tracked
           </p>
         </div>
         <button
@@ -56,20 +63,20 @@ export default function Accounts() {
         </button>
       </div>
 
-      {/* Search */}
-      <div className="relative mb-6">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-        <input
-          type="text"
-          placeholder="Search accounts..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 bg-gray-950 border border-gray-800 rounded-full text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 transition-colors"
-        />
-      </div>
+      {accounts.length > 3 && (
+        <div className="relative mb-6">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+          <input
+            type="text"
+            placeholder="Search accounts..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 bg-gray-950 border border-gray-800 rounded-full text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 transition-colors"
+          />
+        </div>
+      )}
 
-      {/* Account Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {filtered.map((account) => (
           <AccountCard
             key={account.id}
@@ -79,19 +86,24 @@ export default function Accounts() {
         ))}
       </div>
 
-      {filtered.length === 0 && (
-        <div className="text-center py-16">
-          <p className="text-gray-500 text-lg">No accounts found</p>
+      {accounts.length === 0 && (
+        <div className="text-center py-20">
+          <p className="text-gray-500 text-lg mb-2">No accounts tracked yet</p>
+          <p className="text-gray-600 text-sm">
+            Add X accounts to start aggregating their posts.
+          </p>
         </div>
       )}
 
-      {/* Add Account Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-gray-950 border border-gray-800 rounded-2xl p-6 w-full max-w-md mx-4">
-            <h2 className="text-xl font-bold text-white mb-4">
+            <h2 className="text-xl font-bold text-white mb-2">
               Track New Account
             </h2>
+            <p className="text-gray-500 text-sm mb-4">
+              Enter the X username to track their posts.
+            </p>
             <input
               type="text"
               placeholder="@username"
@@ -103,7 +115,7 @@ export default function Accounts() {
             />
             <div className="flex gap-3">
               <button
-                onClick={() => setShowAddModal(false)}
+                onClick={() => { setShowAddModal(false); setNewUsername(''); }}
                 className="flex-1 py-2.5 border border-gray-700 text-white rounded-full font-medium text-sm hover:bg-gray-900 transition-colors"
               >
                 Cancel

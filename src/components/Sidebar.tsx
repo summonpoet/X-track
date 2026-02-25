@@ -1,19 +1,15 @@
 import { NavLink } from 'react-router-dom';
 import {
-  LayoutDashboard,
+  Newspaper,
   Users,
-  BarChart3,
-  FileText,
+  Sparkles,
   Settings,
-  TrendingUp,
 } from 'lucide-react';
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/', icon: Newspaper, label: 'Feed' },
+  { to: '/digest', icon: Sparkles, label: 'AI Digest' },
   { to: '/accounts', icon: Users, label: 'Accounts' },
-  { to: '/analytics', icon: BarChart3, label: 'Analytics' },
-  { to: '/posts', icon: FileText, label: 'Posts' },
-  { to: '/trends', icon: TrendingUp, label: 'Trends' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
@@ -34,6 +30,7 @@ export default function Sidebar() {
           <NavLink
             key={item.to}
             to={item.to}
+            end={item.to === '/'}
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-full text-lg transition-colors mb-1 ${
                 isActive
@@ -49,7 +46,9 @@ export default function Sidebar() {
       </nav>
 
       <div className="p-4 border-t border-gray-800">
-        <p className="text-xs text-gray-600 text-center">X Tracker v1.0</p>
+        <p className="text-xs text-gray-600 text-center">
+          Personal Information Aggregator
+        </p>
       </div>
     </aside>
   );

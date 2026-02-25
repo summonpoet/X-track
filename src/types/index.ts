@@ -2,42 +2,34 @@ export interface TrackedAccount {
   id: string;
   username: string;
   displayName: string;
-  avatarUrl: string;
-  followers: number;
-  following: number;
-  postsCount: number;
-  verified: boolean;
+  profileImageUrl: string;
   addedAt: string;
 }
 
-export interface PostMetrics {
+export interface Tweet {
   id: string;
   text: string;
+  authorUsername: string;
+  authorDisplayName: string;
+  authorProfileImage: string;
+  createdAt: string;
   likes: number;
-  reposts: number;
+  retweets: number;
   replies: number;
   views: number;
-  bookmarks: number;
-  timestamp: string;
-  authorUsername: string;
+  url: string;
 }
 
-export interface DailyMetrics {
-  date: string;
-  followers: number;
-  impressions: number;
-  engagements: number;
-  posts: number;
+export interface AISummary {
+  id: string;
+  title: string;
+  summary: string;
+  keyTopics: string[];
+  sourceTweets: Tweet[];
+  createdAt: string;
 }
 
-export interface EngagementData {
-  date: string;
-  likes: number;
-  reposts: number;
-  replies: number;
-  bookmarks: number;
-}
-
-export interface TopPost extends PostMetrics {
-  engagementRate: number;
+export interface ApiKeys {
+  xBearerToken: string;
+  claudeApiKey: string;
 }
