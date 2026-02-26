@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, Loader2, AlertTriangle, Settings as SettingsIcon } from 'lucide-react';
+import { RefreshCw, Loader2, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import TweetCard from '../components/TweetCard';
 import AiPanel from '../components/AiPanel';
@@ -12,7 +12,6 @@ export default function Feed() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // AI panel state
   const [aiPanel, setAiPanel] = useState<{
     open: boolean;
     title: string;
@@ -23,25 +22,24 @@ export default function Feed() {
 
   const keys = getApiKeys();
   const accounts = getAccounts();
-  const hasKeys = Boolean(keys.xBearerToken);
 
   const loadTweets = useCallback(async () => {
-    if (!keys.xBearerToken || accounts.length === 0) return;
+    if (accounts.length === 0) return;
 
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchAllTweets(accounts, keys.xBearerToken, 15);
+      const data = await fetchAllTweets(accounts, keys.nitterInstance);
       setTweets(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load tweets');
     } finally {
       setLoading(false);
     }
-  }, [keys.xBearerToken, accounts.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [keys.nitterInstance, accounts.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (hasKeys && accounts.length > 0) {
+    if (accounts.length > 0) {
       loadTweets();
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -96,31 +94,11 @@ export default function Feed() {
     }
   };
 
-  // Empty state: no API keys
-  if (!hasKeys) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[70vh] text-center">
-        <SettingsIcon className="w-16 h-16 text-gray-700 mb-4" />
-        <h2 className="text-xl font-bold text-white mb-2">Set up your API Keys</h2>
-        <p className="text-gray-500 max-w-md mb-6">
-          To fetch real posts from X, you need to configure your X API Bearer Token
-          and Claude API Key in settings.
-        </p>
-        <Link
-          to="/settings"
-          className="px-6 py-3 bg-blue-500 text-white rounded-full font-bold hover:bg-blue-600 transition-colors"
-        >
-          Go to Settings
-        </Link>
-      </div>
-    );
-  }
-
   // Empty state: no accounts
   if (accounts.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] text-center">
-        <AlertTriangle className="w-16 h-16 text-gray-700 mb-4" />
+        <Users className="w-16 h-16 text-gray-700 mb-4" />
         <h2 className="text-xl font-bold text-white mb-2">No accounts tracked</h2>
         <p className="text-gray-500 max-w-md mb-6">
           Add some X accounts to start aggregating their posts.
@@ -160,14 +138,17 @@ export default function Feed() {
 
       {error && (
         <div className="bg-red-950/30 border border-red-800 rounded-xl p-4 mb-6">
-          <p className="text-red-400 text-sm">{error}</p>
+          <p className="text-red-400 text-sm whitespace-pre-wrap">{error}</p>
+          <p className="text-gray-600 text-xs mt-2">
+            Tip: If the Nitter instance is down, try changing it in Settings.
+          </p>
         </div>
       )}
 
       {loading && tweets.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20">
           <Loader2 className="w-8 h-8 text-blue-400 animate-spin mb-3" />
-          <p className="text-gray-400">Fetching posts from X...</p>
+          <p className="text-gray-400">Fetching posts via Nitter...</p>
         </div>
       )}
 

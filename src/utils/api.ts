@@ -1,79 +1,67 @@
 import type { Tweet, TrackedAccount } from '../types';
 
-// Fetch tweets for a single user via X API v2
+// Fetch tweets for a single user via Nitter RSS proxy
 export async function fetchUserTweets(
   username: string,
-  bearerToken: string,
-  maxResults = 10
+  nitterInstance: string
 ): Promise<Tweet[]> {
-  // Step 1: get user ID by username
-  const userRes = await fetch(`/api/x-proxy?endpoint=users/by/username/${username}`, {
-    headers: { 'X-Bearer-Token': bearerToken },
-  });
-  if (!userRes.ok) {
-    const err = await userRes.json().catch(() => ({}));
-    throw new Error(err.error || `Failed to look up @${username}`);
+  const res = await fetch(
+    `/api/x-proxy?username=${encodeURIComponent(username)}`,
+    {
+      headers: { 'X-Nitter-Instance': nitterInstance },
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      err.error || `Failed to fetch posts for @${username}`
+    );
   }
-  const userData = await userRes.json();
-  const userId = userData.data?.id;
-  if (!userId) throw new Error(`User @${username} not found`);
 
-  // Step 2: get recent tweets
-  const params = new URLSearchParams({
-    endpoint: `users/${userId}/tweets`,
-    'tweet.fields': 'created_at,public_metrics',
-    'user.fields': 'name,profile_image_url',
-    max_results: String(maxResults),
-    exclude: 'retweets,replies',
-  });
+  const data = await res.json();
 
-  const tweetsRes = await fetch(`/api/x-proxy?${params}`, {
-    headers: { 'X-Bearer-Token': bearerToken },
-  });
-  if (!tweetsRes.ok) {
-    const err = await tweetsRes.json().catch(() => ({}));
-    throw new Error(err.error || 'Failed to fetch tweets');
-  }
-  const tweetsData = await tweetsRes.json();
+  if (!data.tweets || data.tweets.length === 0) return [];
 
-  if (!tweetsData.data) return [];
-
-  return tweetsData.data.map((t: Record<string, unknown>) => {
-    const metrics = (t.public_metrics || {}) as Record<string, number>;
-    return {
-      id: t.id as string,
-      text: t.text as string,
-      authorUsername: username,
-      authorDisplayName: userData.data.name || username,
-      authorProfileImage:
-        userData.data.profile_image_url ||
-        `https://api.dicebear.com/7.x/initials/svg?seed=${username}`,
-      createdAt: t.created_at as string,
-      likes: metrics.like_count || 0,
-      retweets: metrics.retweet_count || 0,
-      replies: metrics.reply_count || 0,
-      views: metrics.impression_count || 0,
-      url: `https://x.com/${username}/status/${t.id}`,
-    } satisfies Tweet;
-  });
+  return data.tweets.map(
+    (t: { id: string; text: string; createdAt: string; url: string; authorUsername: string }) => ({
+      id: t.id,
+      text: t.text,
+      authorUsername: t.authorUsername,
+      authorDisplayName: username,
+      authorProfileImage: `https://api.dicebear.com/7.x/initials/svg?seed=${username}&backgroundColor=1d9bf0`,
+      createdAt: t.createdAt,
+      url: t.url,
+    })
+  );
 }
 
 // Fetch tweets for all tracked accounts
 export async function fetchAllTweets(
   accounts: TrackedAccount[],
-  bearerToken: string,
-  maxPerAccount = 10
+  nitterInstance: string
 ): Promise<Tweet[]> {
   const results = await Promise.allSettled(
-    accounts.map((a) => fetchUserTweets(a.username, bearerToken, maxPerAccount))
+    accounts.map((a) => fetchUserTweets(a.username, nitterInstance))
   );
 
   const tweets: Tweet[] = [];
-  for (const r of results) {
-    if (r.status === 'fulfilled') tweets.push(...r.value);
+  const errors: string[] = [];
+  for (let i = 0; i < results.length; i++) {
+    const r = results[i];
+    if (r.status === 'fulfilled') {
+      tweets.push(...r.value);
+    } else {
+      errors.push(`@${accounts[i].username}: ${r.reason?.message || 'failed'}`);
+    }
   }
 
-  // Sort by creation time descending
+  if (tweets.length === 0 && errors.length > 0) {
+    throw new Error(
+      `Failed to fetch posts:\n${errors.join('\n')}`
+    );
+  }
+
   tweets.sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );

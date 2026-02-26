@@ -5,6 +5,8 @@ const KEYS = {
   apiKeys: 'xtracker_api_keys',
 } as const;
 
+const DEFAULT_NITTER = 'https://nitter.privacydev.net';
+
 export function getAccounts(): TrackedAccount[] {
   try {
     const raw = localStorage.getItem(KEYS.accounts);
@@ -21,9 +23,11 @@ export function saveAccounts(accounts: TrackedAccount[]) {
 export function getApiKeys(): ApiKeys {
   try {
     const raw = localStorage.getItem(KEYS.apiKeys);
-    return raw ? JSON.parse(raw) : { xBearerToken: '', claudeApiKey: '' };
+    return raw
+      ? JSON.parse(raw)
+      : { nitterInstance: DEFAULT_NITTER, claudeApiKey: '' };
   } catch {
-    return { xBearerToken: '', claudeApiKey: '' };
+    return { nitterInstance: DEFAULT_NITTER, claudeApiKey: '' };
   }
 }
 

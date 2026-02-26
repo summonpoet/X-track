@@ -1,15 +1,14 @@
-import { Heart, Repeat2, MessageCircle, Eye, ExternalLink, Sparkles } from 'lucide-react';
+import { ExternalLink, Sparkles } from 'lucide-react';
 import type { Tweet } from '../types';
-import { formatNumber, timeAgo } from '../utils/format';
+import { timeAgo } from '../utils/format';
 
 interface TweetCardProps {
   tweet: Tweet;
   onSummarize?: (tweet: Tweet) => void;
   onResearch?: (tweet: Tweet) => void;
-  compact?: boolean;
 }
 
-export default function TweetCard({ tweet, onSummarize, onResearch, compact }: TweetCardProps) {
+export default function TweetCard({ tweet, onSummarize, onResearch }: TweetCardProps) {
   return (
     <div className="bg-gray-950 border border-gray-800 rounded-2xl p-5 hover:border-gray-700 transition-colors">
       {/* Author header */}
@@ -36,39 +35,20 @@ export default function TweetCard({ tweet, onSummarize, onResearch, compact }: T
           target="_blank"
           rel="noopener noreferrer"
           className="p-2 rounded-full hover:bg-gray-900 text-gray-600 hover:text-blue-400 transition-colors"
+          title="View on X"
         >
           <ExternalLink className="w-4 h-4" />
         </a>
       </div>
 
       {/* Tweet text */}
-      <p className="text-white text-[15px] leading-relaxed mb-4 whitespace-pre-wrap">
+      <p className="text-white text-[15px] leading-relaxed mb-1 whitespace-pre-wrap">
         {tweet.text}
       </p>
 
-      {/* Metrics */}
-      {!compact && (
-        <div className="flex items-center gap-5 text-gray-600 text-xs mb-3">
-          <span className="flex items-center gap-1">
-            <MessageCircle className="w-3.5 h-3.5" /> {formatNumber(tweet.replies)}
-          </span>
-          <span className="flex items-center gap-1">
-            <Repeat2 className="w-3.5 h-3.5" /> {formatNumber(tweet.retweets)}
-          </span>
-          <span className="flex items-center gap-1">
-            <Heart className="w-3.5 h-3.5" /> {formatNumber(tweet.likes)}
-          </span>
-          {tweet.views > 0 && (
-            <span className="flex items-center gap-1">
-              <Eye className="w-3.5 h-3.5" /> {formatNumber(tweet.views)}
-            </span>
-          )}
-        </div>
-      )}
-
       {/* AI actions */}
       {(onSummarize || onResearch) && (
-        <div className="flex gap-2 pt-3 border-t border-gray-800/50">
+        <div className="flex gap-2 pt-3 mt-3 border-t border-gray-800/50">
           {onSummarize && (
             <button
               onClick={() => onSummarize(tweet)}

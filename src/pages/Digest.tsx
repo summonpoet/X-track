@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles, Loader2, RefreshCw, Settings as SettingsIcon } from 'lucide-react';
+import { Sparkles, Loader2, RefreshCw, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Markdown from 'react-markdown';
 import { getApiKeys, getAccounts } from '../utils/storage';
@@ -14,19 +14,19 @@ export default function Digest() {
 
   const keys = getApiKeys();
   const accounts = getAccounts();
-  const ready = Boolean(keys.xBearerToken && keys.claudeApiKey);
+  const hasClaude = Boolean(keys.claudeApiKey);
 
   const generateDigest = async () => {
-    if (!keys.xBearerToken || !keys.claudeApiKey) return;
+    if (!keys.claudeApiKey) return;
 
     setLoading(true);
     setError(null);
     try {
-      const tweets = await fetchAllTweets(accounts, keys.xBearerToken, 20);
+      const tweets = await fetchAllTweets(accounts, keys.nitterInstance);
       setTweetCount(tweets.length);
 
       if (tweets.length === 0) {
-        setError('No tweets fetched. Check your accounts and X API key.');
+        setError('No tweets fetched. The Nitter instance may be down, or check your tracked accounts.');
         setLoading(false);
         return;
       }
@@ -44,20 +44,38 @@ export default function Digest() {
     }
   };
 
-  if (!ready) {
+  if (!hasClaude) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] text-center">
-        <SettingsIcon className="w-16 h-16 text-gray-700 mb-4" />
-        <h2 className="text-xl font-bold text-white mb-2">API Keys Required</h2>
+        <Sparkles className="w-16 h-16 text-gray-700 mb-4" />
+        <h2 className="text-xl font-bold text-white mb-2">Claude API Key Required</h2>
         <p className="text-gray-500 max-w-md mb-6">
-          AI Digest needs both your X API Bearer Token (to fetch posts)
-          and Claude API Key (to generate summaries).
+          AI Digest needs your Claude API Key to generate summaries.
+          Posts will be fetched via Nitter (no API key needed).
         </p>
         <Link
           to="/settings"
           className="px-6 py-3 bg-blue-500 text-white rounded-full font-bold hover:bg-blue-600 transition-colors"
         >
           Go to Settings
+        </Link>
+      </div>
+    );
+  }
+
+  if (accounts.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[70vh] text-center">
+        <Users className="w-16 h-16 text-gray-700 mb-4" />
+        <h2 className="text-xl font-bold text-white mb-2">No accounts tracked</h2>
+        <p className="text-gray-500 max-w-md mb-6">
+          Add X accounts first, then come back to generate a digest.
+        </p>
+        <Link
+          to="/accounts"
+          className="px-6 py-3 bg-blue-500 text-white rounded-full font-bold hover:bg-blue-600 transition-colors"
+        >
+          Add Accounts
         </Link>
       </div>
     );
@@ -88,7 +106,7 @@ export default function Digest() {
         />
         <button
           onClick={generateDigest}
-          disabled={loading || accounts.length === 0}
+          disabled={loading}
           className="mt-3 flex items-center gap-2 px-6 py-2.5 bg-blue-500 text-white rounded-full font-bold text-sm hover:bg-blue-600 disabled:opacity-50 transition-colors"
         >
           {loading ? (

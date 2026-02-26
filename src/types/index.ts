@@ -13,10 +13,6 @@ export interface Tweet {
   authorDisplayName: string;
   authorProfileImage: string;
   createdAt: string;
-  likes: number;
-  retweets: number;
-  replies: number;
-  views: number;
   url: string;
 }
 
@@ -30,6 +26,6 @@ export interface AISummary {
 }
 
 export interface ApiKeys {
-  xBearerToken: string;
+  nitterInstance: string;
   claudeApiKey: string;
 }
